@@ -63,8 +63,8 @@ variable "account_password_policy" {
   default = {
 
     minimum_password_length        = 14
-    max_password_age               = 365
-    password_reuse_prevention      = 3
+    max_password_age               = 90
+    password_reuse_prevention      = 6
     require_lowercase_characters   = true
     require_numbers                = true
     require_uppercase_characters   = true
