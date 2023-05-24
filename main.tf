@@ -1,9 +1,15 @@
+locals {
+    terraform_state_bucket_name = "terraform-state-network-${var.account_id}"
+}
+
 ###############################################
 # IAM assumable role with custom trust policy
 ###############################################
 
 # IAM role
 resource "aws_iam_role" "terraform" {
+  count = var.baseline_settings.create_tf_iam_role == true ? 1 : 0
+
   name                 = "svc-terraform-role"
   max_session_duration = 3600
 
@@ -36,6 +42,8 @@ resource "aws_iam_role" "terraform" {
 
 # S3 backend policy
 resource "aws_iam_policy" "terraform_bucket" {
+  count = var.baseline_settings.create_tf_iam_role == true ? 1 : 0
+
   name        = "svc-terraform-bucket-policy"
   path        = "/"
   description = "IAM policy for access to the s3 backend bucket."
@@ -51,7 +59,7 @@ resource "aws_iam_policy" "terraform_bucket" {
         ]
         Effect = "Allow"
         Resource : [
-          "arn:aws:s3:::${var.terraform_state_bucket_name}"
+          "arn:aws:s3:::${local.terraform_state_bucket_name}"
         ]
       },
       {
@@ -64,7 +72,7 @@ resource "aws_iam_policy" "terraform_bucket" {
         ]
         Effect = "Allow"
         Resource : [
-          "arn:aws:s3:::${var.terraform_state_bucket_name}"
+          "arn:aws:s3:::${local.terraform_state_bucket_name}"
         ]
       }
     ]
@@ -73,20 +81,26 @@ resource "aws_iam_policy" "terraform_bucket" {
 
 # Custom policy
 resource "aws_iam_policy" "terraform" {
+  count = var.baseline_settings.create_tf_iam_role == true ? 1 : 0
+
   name        = "svc-terraform-role-policy"
   path        = "/"
   description = "IAM policy for svc-terraform-role"
-  policy = var.custom_iam_policy
+  policy      = var.custom_iam_policy
 }
 
 resource "aws_iam_role_policy_attachment" "terraform_bucket" {
-  role       = aws_iam_role.terraform.name
-  policy_arn = aws_iam_policy.terraform_bucket.arn
+  count = var.baseline_settings.create_tf_iam_role == true ? 1 : 0
+
+  role       = aws_iam_role.terraform[0].name
+  policy_arn = aws_iam_policy.terraform_bucket[0].arn
 }
 
 resource "aws_iam_role_policy_attachment" "terraform" {
-  role       = aws_iam_role.terraform.name
-  policy_arn = aws_iam_policy.terraform.arn
+  count = var.baseline_settings.create_tf_iam_role == true ? 1 : 0
+
+  role       = aws_iam_role.terraform[0].name
+  policy_arn = aws_iam_policy.terraform[0].arn
 }
 
 ###############################################
@@ -94,6 +108,7 @@ resource "aws_iam_role_policy_attachment" "terraform" {
 ###############################################
 
 resource "aws_account_alternate_contact" "billing" {
+  count = var.baseline_settings.update_alternative_contacts == true ? 1 : 0
 
   alternate_contact_type = "BILLING"
 
@@ -104,6 +119,7 @@ resource "aws_account_alternate_contact" "billing" {
 }
 
 resource "aws_account_alternate_contact" "ops" {
+  count = var.baseline_settings.update_alternative_contacts == true ? 1 : 0
 
   alternate_contact_type = "OPERATIONS"
 
@@ -114,6 +130,7 @@ resource "aws_account_alternate_contact" "ops" {
 }
 
 resource "aws_account_alternate_contact" "sec" {
+  count = var.baseline_settings.update_alternative_contacts == true ? 1 : 0
 
   alternate_contact_type = "SECURITY"
 
@@ -129,6 +146,8 @@ resource "aws_account_alternate_contact" "sec" {
 ###############################################
 
 resource "aws_iam_account_password_policy" "this" {
+  count = var.baseline_settings.update_password_policy == true ? 1 : 0
+
   minimum_password_length        = var.account_password_policy.minimum_password_length
   max_password_age               = var.account_password_policy.max_password_age
   password_reuse_prevention      = var.account_password_policy.password_reuse_prevention
@@ -144,5 +163,6 @@ resource "aws_iam_account_password_policy" "this" {
 ###############################################
 
 resource "aws_ebs_encryption_by_default" "this" {
+  count   = var.baseline_settings.enable_default_ebs_encryption == true ? 1 : 0
   enabled = true
 }

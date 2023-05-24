@@ -13,9 +13,9 @@ variable "mgmt_account_id" {
   description = "The management AWS Account ID."
 }
 
-variable "terraform_state_bucket_name" {
+variable "account_id" {
   type        = string
-  description = "The accounts terraform state S3 bucket name."
+  description = "The AWS Account ID to configure."
 }
 
 variable "billing_account_contacts" {
@@ -61,7 +61,6 @@ variable "account_password_policy" {
   })
 
   default = {
-
     minimum_password_length        = 14
     max_password_age               = 90
     password_reuse_prevention      = 6
@@ -77,4 +76,28 @@ variable "account_password_policy" {
 variable "custom_iam_policy" {
   type        = string
   description = "A custom IAM policy for this account."
+}
+
+variable "baseline_settings" {
+  type = object({
+    update_password_policy        = bool
+    enable_default_ebs_encryption = bool
+    create_tf_iam_role            = bool
+    update_alternative_contacts   = bool
+  })
+
+  default = {
+    update_password_policy        = true
+    enable_default_ebs_encryption = true
+    create_tf_iam_role            = true
+    update_alternative_contacts   = true
+  }
+
+  description = "Enable or disable various baseline settings."
+}
+
+variable "tags" {
+  description = "(Optional) A mapping of tags to assign to the account resources."
+  type        = map(string)
+  default     = {}
 }
