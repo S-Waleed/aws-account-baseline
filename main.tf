@@ -1,5 +1,5 @@
 locals {
-    terraform_state_bucket_name = "terraform-state-network-${var.account_id}"
+  terraform_state_bucket_name = "tf-state-${var.role}-${var.environment}-${var.account_id}"
 }
 
 ###############################################
@@ -40,7 +40,11 @@ resource "aws_iam_role" "terraform" {
   }
 }
 
-# S3 backend policy
+###############################################
+# Terraform S3 backend resources
+###############################################
+
+# Bucket IAM policy
 resource "aws_iam_policy" "terraform_bucket" {
   count = var.baseline_settings.create_tf_iam_role == true ? 1 : 0
 
@@ -79,7 +83,7 @@ resource "aws_iam_policy" "terraform_bucket" {
   })
 }
 
-# Custom policy
+# Custom IAM policy
 resource "aws_iam_policy" "terraform" {
   count = var.baseline_settings.create_tf_iam_role == true ? 1 : 0
 
@@ -103,6 +107,50 @@ resource "aws_iam_role_policy_attachment" "terraform" {
   policy_arn = aws_iam_policy.terraform[0].arn
 }
 
+# S3 Bucket
+# Private bucket with versioning enabled
+module "tf" {
+  source  = "terraform-aws-modules/s3-bucket/aws"
+  version = "3.11.0"
+
+  bucket              = local.terraform_state_bucket_name
+  create_bucket       = var.create_tf_bucket
+  ignore_public_acls  = true
+  block_public_policy = true
+  block_public_acls   = true
+
+  versioning = {
+    enabled = true
+  }
+  server_side_encryption_configuration = {
+    rule = {
+      apply_server_side_encryption_by_default = {
+        kms_master_key_id = aws_kms_key.objects.arn
+        sse_algorithm     = "aws:kms"
+      }
+    }
+  }
+
+  lifecycle_rule = [
+    {
+      id      = "archive"
+      enabled = true
+
+      transition = [
+        {
+          days          = 365
+          storage_class = "ONEZONE_IA"
+          }, {
+        }
+      ]
+
+      noncurrent_version_expiration = {
+        newer_noncurrent_versions = 5
+        days                      = 90
+      }
+    }
+  ]
+}
 ###############################################
 # Account Contacts
 ###############################################

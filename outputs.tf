@@ -1,7 +1,7 @@
-# output "id" {
-#   value       = aws_organizations_account.this.id
-#   description = "The AWS account ID."
-# }
+output "terraform_state_bucket_name" {
+  value       = local.terraform_state_bucket_name
+  description = "The account's terraform state bucket name."
+}
 
 output "terraform_role_arn" {
   value       = aws_iam_role.terraform[0].arn

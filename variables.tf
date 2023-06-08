@@ -18,6 +18,11 @@ variable "account_id" {
   description = "The AWS Account ID to configure."
 }
 
+variable "role" {
+  type        = string
+  description = "The label or functional role of the AWS account."
+}
+
 variable "billing_account_contacts" {
   type = object({
     name          = string
@@ -100,4 +105,10 @@ variable "tags" {
   description = "(Optional) A mapping of tags to assign to the account resources."
   type        = map(string)
   default     = {}
+}
+
+variable "create_tf_bucket" {
+  type        = bool
+  description = "(optional) Whether to create the Terraform S3 backend bucket."
+  default     = true
 }
